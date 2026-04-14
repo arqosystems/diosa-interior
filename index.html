@@ -848,9 +848,12 @@ window.addEventListener('load', () => {
         currentUser = user;
         if(user){
           updateUserBadge(user);
-          // Solo avanzar automáticamente si venimos de una sesión persistida (no de redirect, eso ya lo maneja getRedirectResult)
-          if(localStorage.getItem('diosa_paid') === 'true' && cur === 1){
-            goSlide(7);
+          if(cur === 1){
+            if(localStorage.getItem('diosa_paid') === 'true'){
+              goSlide(7);
+            } else {
+              goSlide(2);
+            }
           }
         }
       });
