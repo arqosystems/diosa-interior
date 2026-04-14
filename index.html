@@ -828,34 +828,25 @@ window.addEventListener('load', () => {
     try{
       firebase.initializeApp(FIREBASE_CONFIG);
 
-      // Capturar resultado del redirect de Google en Safari iOS
+      let _navDone = false;
+      function _navUser(user, fromRedirect){
+        if(_navDone) return;
+        _navDone = true;
+        currentUser = user;
+        updateUserBadge(user);
+        if(fromRedirect) toast('Bienvenida, ' + user.displayName.split(' ')[0] + ' ❖');
+        const destino = localStorage.getItem('diosa_paid') === 'true' ? 7 : 2;
+        setTimeout(() => { if(cur === 1) goSlide(destino); }, 300);
+      }
+
+      // Capturar redirect de Google (Safari iOS)
       firebase.auth().getRedirectResult().then(result => {
-        if(result && result.user){
-          currentUser = result.user;
-          updateUserBadge(result.user);
-          toast('Bienvenida, ' + result.user.displayName.split(' ')[0] + ' ✦');
-          setTimeout(() => {
-            if(localStorage.getItem('diosa_paid') === 'true'){
-              goSlide(7);
-            } else {
-              goSlide(2);
-            }
-          }, 800);
-        }
+        if(result && result.user) _navUser(result.user, true);
       }).catch(err => { console.error('getRedirectResult error:', err); });
 
+      // Sesion persistida
       firebase.auth().onAuthStateChanged(user => {
-        currentUser = user;
-        if(user){
-          updateUserBadge(user);
-          if(cur === 1){
-            if(localStorage.getItem('diosa_paid') === 'true'){
-              goSlide(7);
-            } else {
-              goSlide(2);
-            }
-          }
-        }
+        if(user) setTimeout(() => _navUser(user, false), 100);
       });
     }catch(e){ console.log('Firebase no configurado:', e); }
   }
