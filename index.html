@@ -827,11 +827,31 @@ window.addEventListener('load', () => {
   if(FIREBASE_CONFIG.apiKey !== "TU_API_KEY"){
     try{
       firebase.initializeApp(FIREBASE_CONFIG);
+
+      // Capturar resultado del redirect de Google en Safari iOS
+      firebase.auth().getRedirectResult().then(result => {
+        if(result && result.user){
+          currentUser = result.user;
+          updateUserBadge(result.user);
+          toast('Bienvenida, ' + result.user.displayName.split(' ')[0] + ' ✦');
+          setTimeout(() => {
+            if(localStorage.getItem('diosa_paid') === 'true'){
+              goSlide(7);
+            } else {
+              goSlide(2);
+            }
+          }, 800);
+        }
+      }).catch(err => { console.error('getRedirectResult error:', err); });
+
       firebase.auth().onAuthStateChanged(user => {
         currentUser = user;
         if(user){
           updateUserBadge(user);
-          if(localStorage.getItem('diosa_paid') === 'true') goSlide(7);
+          // Solo avanzar automáticamente si venimos de una sesión persistida (no de redirect, eso ya lo maneja getRedirectResult)
+          if(localStorage.getItem('diosa_paid') === 'true' && cur === 1){
+            goSlide(7);
+          }
         }
       });
     }catch(e){ console.log('Firebase no configurado:', e); }
@@ -849,14 +869,21 @@ function signInGoogle(){
     return;
   }
   const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider)
-    .then(result => {
-      currentUser = result.user;
-      updateUserBadge(result.user);
-      toast('Bienvenida, ' + result.user.displayName.split(' ')[0] + ' ✦');
-      setTimeout(() => goSlide(2), 800);
-    })
-    .catch(err => { toast('Error al iniciar sesión'); console.error(err); });
+  // En Safari iOS los popups están bloqueados — usar redirect en mobile
+  const isSafariMobile = /iP(hone|ad|od)/.test(navigator.userAgent) || 
+    (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome'));
+  if(isSafariMobile){
+    firebase.auth().signInWithRedirect(provider);
+  } else {
+    firebase.auth().signInWithPopup(provider)
+      .then(result => {
+        currentUser = result.user;
+        updateUserBadge(result.user);
+        toast('Bienvenida, ' + result.user.displayName.split(' ')[0] + ' ✦');
+        setTimeout(() => goSlide(2), 800);
+      })
+      .catch(err => { toast('Error al iniciar sesión'); console.error(err); });
+  }
 }
 
 function updateUserBadge(user){
