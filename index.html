@@ -836,19 +836,21 @@ window.addEventListener('load', () => {
         updateUserBadge(user);
         if(fromRedirect) toast('Bienvenida, ' + user.displayName.split(' ')[0] + ' ❖');
         const destino = localStorage.getItem('diosa_paid') === 'true' ? 7 : 2;
-        setTimeout(() => { if(cur === 1) goSlide(destino); }, 300);
+        goSlide(destino);
       }
 
-      // Capturar redirect de Google (Safari iOS)
+      // Sesion persistida — dispara primero, navegacion directa
+      firebase.auth().onAuthStateChanged(user => {
+        if(user) _navUser(user, false);
+      });
+
+      // Capturar redirect de Google (Safari iOS) — por si es login nuevo
       firebase.auth().getRedirectResult().then(result => {
         if(result && result.user) _navUser(result.user, true);
       }).catch(err => { console.error('getRedirectResult error:', err); });
 
-      // Sesion persistida
-      firebase.auth().onAuthStateChanged(user => {
-        if(user) setTimeout(() => _navUser(user, false), 100);
-      });
     }catch(e){ console.log('Firebase no configurado:', e); }
+  }
   }
 
   updateChrome();
